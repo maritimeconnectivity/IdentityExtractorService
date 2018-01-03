@@ -1,0 +1,22 @@
+language: java
+
+jdk:
+  - openjdk8
+
+branches:
+  only:
+    - master
+
+services:
+  - docker
+
+install:
+  - mvn -U clean install && cp target/extract-identity-service-latest.war docker/
+
+before_script:
+  - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+
+script:
+  - docker build --no-cache -t dmadk/extract-identity-service docker
+  - docker push dmadk/extract-identity-service
+  - docker logout

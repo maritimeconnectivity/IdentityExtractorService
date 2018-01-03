@@ -19,6 +19,7 @@ $(document).ready(function() {
     let textArea = $("#textinput");
     let decodeBtn = $("#decodeBtn");
     let resultDiv = $("#result");
+    let clearBtn = $("#clearBtn");
     let fileContent;
     let decoded;
 
@@ -50,19 +51,28 @@ $(document).ready(function() {
        } else if (textArea.val()) {
            toBeSent = textArea.val();
        }
-       $.post({
-           url: '/api/extract',
-           data: toBeSent,
-           success: data => {
-               decoded = data;
-               console.log(data);
-               //decoded = JSON.parse(decoded);
-               for (const [key, value] of Object.entries(decoded)) {
-                   resultDiv.append(`<p>${key} : ${value}</p>`);
-               }
-           },
-           error: () => {alert("Something went wrong");},
-           contentType: 'text/plain'
-       });
+       if (toBeSent) {
+           $.post({
+               url: '/api/extract',
+               data: toBeSent,
+               success: data => {
+                   decoded = data;
+                   //console.log(data);
+                   resultDiv.empty();
+                   for (const [key, value] of Object.entries(decoded)) {
+                       resultDiv.append(`<p>${key} : ${value}</p>`);
+                   }
+               },
+               error: () => {alert("Something went wrong");},
+               contentType: 'text/plain'
+           });
+       }
+    });
+    clearBtn.click(() => {
+        resultDiv.empty();
+        textArea.val(null);
+        fileUploader.val('');
+        fileContent = null;
+        decoded = null;
     });
 });
