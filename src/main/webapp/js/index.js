@@ -23,6 +23,10 @@ $(document).ready(function() {
     let fileContent;
     let decoded;
 
+    textArea.on('change', () => {
+        fileContent = textArea.val();
+    });
+
     fileUploader.on('change', () => {
         let file = fileUploader.prop('files')[0];
         if (file) {
@@ -34,20 +38,19 @@ $(document).ready(function() {
             reader.readAsText(file);
         }
     });
+
     decodeBtn.click(() => {
        let file = fileUploader.prop('files')[0];
        let toBeSent;
-       if (file) {
-           if (fileContent) {
-               toBeSent = fileContent;
-           } else {
-               let reader = new FileReader();
-               reader.onloadend = function () {
-                   toBeSent = reader.result;
-                   textArea.val(toBeSent);
-               }
-               reader.readAsText(file);
+       if (fileContent) {
+           toBeSent = fileContent;
+       } else if (file) {
+           let reader = new FileReader();
+           reader.onloadend = function () {
+               toBeSent = reader.result;
+               textArea.val(toBeSent);
            }
+           reader.readAsText(file);
        } else if (textArea.val()) {
            toBeSent = textArea.val();
        }
@@ -57,17 +60,19 @@ $(document).ready(function() {
                data: toBeSent,
                success: data => {
                    decoded = data;
-                   //console.log(data);
                    resultDiv.empty();
                    for (const [key, value] of Object.entries(decoded)) {
                        resultDiv.append(`<p>${key} : ${value}</p>`);
                    }
                },
-               error: () => {alert("Something went wrong");},
-               contentType: 'text/plain'
+               error: e => {
+                   alert(e.responseText);
+               },
+               contentType: 'application/x-pem-file'
            });
        }
     });
+
     clearBtn.click(() => {
         resultDiv.empty();
         textArea.val(null);
