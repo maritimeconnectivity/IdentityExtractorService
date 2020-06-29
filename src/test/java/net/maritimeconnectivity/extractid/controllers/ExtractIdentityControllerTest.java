@@ -18,8 +18,8 @@ package net.maritimeconnectivity.extractid.controllers;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.maritimecloud.pki.CertificateHandler;
-import net.maritimecloud.pki.PKIIdentity;
+import net.maritimeconnectivity.pki.CertificateHandler;
+import net.maritimeconnectivity.pki.PKIIdentity;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +40,7 @@ import static org.junit.Assert.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @RunWith(SpringRunner.class)
-@WebMvcTest(value = ExtractIdentityController.class, secure = false)
+@WebMvcTest(value = ExtractIdentityController.class)
 public class ExtractIdentityControllerTest {
 
     @Autowired

@@ -17,8 +17,8 @@
 package net.maritimeconnectivity.extractid.controllers;
 
 import lombok.extern.slf4j.Slf4j;
-import net.maritimecloud.pki.CertificateHandler;
-import net.maritimecloud.pki.PKIIdentity;
+import net.maritimeconnectivity.pki.CertificateHandler;
+import net.maritimeconnectivity.pki.PKIIdentity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +44,7 @@ public class ExtractIdentityController {
     @RequestMapping(
             value = "/api/extract",
             method = RequestMethod.POST,
-            produces = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = "application/x-pem-file"
     )
     public ResponseEntity<?> extractIdentityFromCert(@RequestBody String pemCert) {
