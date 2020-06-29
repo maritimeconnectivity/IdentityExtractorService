@@ -23,6 +23,15 @@ $(document).ready(function() {
     let fileContent;
     let decoded;
 
+    const mcpTypeAttributes ={
+        "organization":["ou", "mrn", "name", "email", "url", "address", "country", "mrnSubsidiary", "homeMMSUrl"],
+        "vessel":["ou", "o", "mrn", "cn", "country", "permissions", "imoNumber", "mmsiNumber", "callSign", "flagState", "aisShipType", "portOfRegister", "country", "mrnSubsidiary", "homeMmsUrl"],
+        "mms":["ou", "o", "mrn", "cn", "country", "url", "mrnSubsidiary", "homeMmsUrl", "permissions"],
+        "user":["ou", "o", "mrn", "cn", "country", "email", "firstName", "lastName", "permissions"],
+        "service":["ou", "o", "mrn", "cn", "country", "shipMrn", "mrnSubsidiary", "homeMmsUrl", "permissions"],
+        "device":["ou", "o", "mrn", "cn", "country", "mrnSubsidiary", "homeMmsUrl", "permissions"]
+    };
+
     textArea.on('change', () => {
         fileContent = textArea.val();
     });
@@ -62,7 +71,12 @@ $(document).ready(function() {
                    decoded = data;
                    resultDiv.empty();
                    for (const [key, value] of Object.entries(decoded)) {
-                       resultDiv.append(`<p>${key} : ${value}</p>`);
+                       if (mcpTypeAttributes[decoded['ou']].includes(key)){
+                           if(value)
+                               resultDiv.append(`<p><b>${key}</b> : ${value}</p>`);
+                           else
+                               resultDiv.append(`<p><b>${key}</b> : <em>${value}</em></p>`);
+                       }
                    }
                },
                error: e => {
