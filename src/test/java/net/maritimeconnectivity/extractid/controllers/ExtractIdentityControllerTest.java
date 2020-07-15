@@ -64,7 +64,7 @@ public class ExtractIdentityControllerTest {
         String identityJson = gson.toJson(identity);
 
         try {
-            MvcResult result = mvc.perform(post("/api/extract").content(pemCert)
+            MvcResult result = mvc.perform(post("/api/extract/mcp").content(pemCert)
                     .contentType("application/x-pem-file")).andReturn();
             MockHttpServletResponse response = result.getResponse();
             assertEquals(200, response.getStatus());

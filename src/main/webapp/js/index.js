@@ -18,6 +18,7 @@ $(document).ready(function() {
     let fileUploader = $("#fileUploader");
     let textArea = $("#textinput");
     let decodeBtn = $("#decodeBtn");
+    let readAttrBtn = $("#readAttrBtn");
     let resultDiv = $("#result");
     let clearBtn = $("#clearBtn");
     let fileContent;
@@ -65,7 +66,7 @@ $(document).ready(function() {
        }
        if (toBeSent) {
            $.post({
-               url: '/api/extract',
+               url: '/api/extract/mcp',
                data: toBeSent,
                success: data => {
                    decoded = data;
@@ -85,6 +86,40 @@ $(document).ready(function() {
                contentType: 'application/x-pem-file'
            });
        }
+    });
+
+    readAttrBtn.click(() => {
+        let file = fileUploader.prop('files')[0];
+        let toBeSent;
+        if (fileContent) {
+            toBeSent = fileContent;
+        } else if (file) {
+            let reader = new FileReader();
+            reader.onloadend = function () {
+                toBeSent = reader.result;
+                textArea.val(toBeSent);
+            }
+            reader.readAsText(file);
+        } else if (textArea.val()) {
+            toBeSent = textArea.val();
+        }
+        if (toBeSent) {
+            $.post({
+                url: '/api/extract/x509',
+                data: toBeSent,
+                success: data => {
+                    decoded = data;
+                    resultDiv.empty();
+                    for (const [key, value] of Object.entries(decoded)) {
+                        resultDiv.append(`<p><b>${key}</b> : ${value}</p>`);
+                    }
+                },
+                error: e => {
+                    alert(e.responseText);
+                },
+                contentType: 'application/x-pem-file'
+            });
+        }
     });
 
     clearBtn.click(() => {
