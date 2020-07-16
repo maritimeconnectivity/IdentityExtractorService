@@ -22,12 +22,22 @@
     <body>
         <h1>MCP Certificate Decoder</h1>
         <h2>Enter or upload PEM encoded certificate</h2>
-        <textarea id="textinput" rows="10" cols="50" placeholder="Enter PEM encoded certificate here"></textarea>
-        <p></p>
-        <input type="file" id="fileUploader">
+        <div>
+            <textarea id="certPemInput" rows="10" cols="50" placeholder="Enter PEM encoded certificate here"></textarea>
+            <p></p>
+            <input type="file" id="certFileUploader">
+        </div>
+        <div style="display:none;" id="issuerCertInput">
+            <p></p>
+            Issuer certificate input field<br>
+            <textarea id="issuerPemInput" rows="10" cols="50" placeholder="Enter PEM encoded issuer certificate here"></textarea>
+            <p></p>
+            <input type="file" id="issuerFileUploader">
+        </div>
         <p></p>
         <button id="decodeBtn">Decode!</button>
         <button id="readAttrBtn">Read X509 attributes</button>
+        <button id="ocspBtn">Check revocation status</button>
         <button id="clearBtn">Clear!</button>
         <p></p>
         <div id="result"></div>

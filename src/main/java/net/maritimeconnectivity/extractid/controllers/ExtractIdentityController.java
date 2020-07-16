@@ -27,11 +27,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.json.simple.JSONObject;
+import sun.security.provider.certpath.CertId;
+import sun.security.provider.certpath.OCSP;
+import sun.security.x509.X509CertImpl;
 
 import java.io.IOException;
+import java.net.URI;
+import java.security.cert.CertPathValidatorException;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import static sun.security.provider.certpath.OCSP.getResponderURI;
 
 @RestController
 @Slf4j
@@ -62,7 +70,6 @@ public class ExtractIdentityController {
         }
 
         X509Certificate cert = CertificateHandler.getCertFromPem(pemCert);
-        System.out.println(cert.toString());
         PKIIdentity identity = CertificateHandler.getIdentityFromCert(cert);
         return new ResponseEntity<>(identity, HttpStatus.OK);
     }
@@ -78,7 +85,7 @@ public class ExtractIdentityController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = "application/x-pem-file"
     )
-    public ResponseEntity<?> extractCertAttributes(@RequestBody String pemCert) throws IOException {
+    public ResponseEntity<?> extractCertAttributes(@RequestBody String pemCert) {
         if (pemCert.endsWith("\n")) {
             pemCert = pemCert.trim();
         }
@@ -99,11 +106,82 @@ public class ExtractIdentityController {
         return new ResponseEntity<>(obj, HttpStatus.OK);
     }
 
+    /**
+     * Takes a PEM certificate and returns the X.509 certificate attributes
+     * @param integratedCerts the integrated string of the PEM certificate and the issuer certificate
+     * @return        the certificate attributes
+     */
+    @RequestMapping(
+            value = "/api/extract/ocsp",
+            method = RequestMethod.POST,
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = "application/x-pem-file"
+    )
+    public ResponseEntity<?> checkOCSP(@RequestBody String integratedCerts) throws CertificateException, IOException, CertPathValidatorException {
+        if (!integratedCerts.contains("===certificate separator===")) {
+            return new ResponseEntity<>("Given request body does not have expected separator.", HttpStatus.BAD_REQUEST);
+        }
+        String[] elements = integratedCerts.split("===certificate separator===");
+        String pemCert = elements[0];
+        String pemCertSubCA = elements[1];
+
+        if (pemCert.endsWith("\n")) {
+            pemCert = pemCert.trim();
+        }
+        if (pemCert.startsWith("-----BEGIN PRIVATE KEY-----")) {
+            return new ResponseEntity<>("This is a private key. You should NEVER give your private key to anybody!", HttpStatus.BAD_REQUEST);
+        } else if (!pemCert.startsWith(PEM_START) || !pemCert.endsWith(PEM_END)) {
+            return new ResponseEntity<>("Request does not contain a valid PEM encoded certificate", HttpStatus.BAD_REQUEST);
+        }
+
+        if (pemCertSubCA.endsWith("\n")) {
+            pemCertSubCA = pemCertSubCA.trim();
+        }
+        if (pemCertSubCA.startsWith("-----BEGIN PRIVATE KEY-----")) {
+            return new ResponseEntity<>("This is a private key. You should NEVER give your private key to anybody!", HttpStatus.BAD_REQUEST);
+        } else if (!pemCertSubCA.startsWith(PEM_START) || !pemCertSubCA.endsWith(PEM_END)) {
+            return new ResponseEntity<>("Request does not contain a valid PEM encoded issuer certificate", HttpStatus.BAD_REQUEST);
+        }
+
+        X509Certificate cert = CertificateHandler.getCertFromPem(pemCert);
+        X509Certificate issuerCert = CertificateHandler.getCertFromPem(pemCertSubCA);
+        OCSP.RevocationStatus status = null;
+        try{
+            status = check(cert,issuerCert);
+        } catch (IOException e) {
+            return new ResponseEntity<>("Error occurred in checking revocation status: " + e.toString(), HttpStatus.BAD_REQUEST);
+        } catch (CertPathValidatorException e) {
+            return new ResponseEntity<>("Error occurred in checking revocation status: " + e.toString(), HttpStatus.BAD_REQUEST);
+        } catch (CertificateException e) {
+            return new ResponseEntity<>("Error occurred in checking revocation status: " + e.toString(), HttpStatus.BAD_REQUEST);
+        }
+        JSONObject obj = new JSONObject();
+        obj.put("ocsp responder uri", getResponderURI(X509CertImpl.toImpl(cert)));
+        obj.put("cert status", status.getCertStatus().toString());
+        if(status.getRevocationTime() != null)
+            obj.put("revoked time", getGracefulDate(status.getRevocationTime()));
+        return new ResponseEntity<>(obj, HttpStatus.OK);
+    }
+
     private String getGracefulDate(Date date){
         String pattern = "yyyy/MM/dd HH:mm:ss Z";
         SimpleDateFormat sdf = new SimpleDateFormat(pattern);
-        System.out.println(sdf.format(date));
         return sdf.format(date);
+    }
+
+    public OCSP.RevocationStatus check(X509Certificate cert,
+                                              X509Certificate issuerCert)
+            throws IOException, CertPathValidatorException, CertificateException {
+        CertId certId = null;
+        URI responderURI = null;
+
+        X509CertImpl certImpl = X509CertImpl.toImpl(cert);
+        responderURI = getResponderURI(certImpl);
+        if (responderURI == null) {
+            throw new CertPathValidatorException
+                    ("No OCSP Responder URI in certificate");
+        }
+        return OCSP.check(cert, issuerCert, responderURI, cert, null);
     }
 
 }

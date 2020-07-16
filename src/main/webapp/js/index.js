@@ -15,14 +15,20 @@
  */
 
 $(document).ready(function() {
-    let fileUploader = $("#fileUploader");
-    let textArea = $("#textinput");
+    let fileUploader = $("#certFileUploader");
+    let issuerFileUploader = $("#issuerFileUploader");
+    let certPemText = $("#certPemInput");
+    let issuerPemText = $("#issuerPemInput");
     let decodeBtn = $("#decodeBtn");
     let readAttrBtn = $("#readAttrBtn");
+    let ocspBtn = $("#ocspBtn");
     let resultDiv = $("#result");
     let clearBtn = $("#clearBtn");
     let fileContent;
+    let issuerFileContent;
     let decoded;
+
+    clear();
 
     const mcpTypeAttributes ={
         "organization":["ou", "mrn", "name", "email", "url", "address", "country", "mrnSubsidiary", "homeMMSUrl"],
@@ -33,8 +39,12 @@ $(document).ready(function() {
         "device":["ou", "o", "mrn", "cn", "country", "mrnSubsidiary", "homeMmsUrl", "permissions"]
     };
 
-    textArea.on('change', () => {
-        fileContent = textArea.val();
+    certPemText.on('change', () => {
+        fileContent = certPemText.val();
+    });
+
+    issuerPemText.on('change', () => {
+        issuerFileContent = issuerPemText.val();
     });
 
     fileUploader.on('change', () => {
@@ -43,27 +53,27 @@ $(document).ready(function() {
             let reader = new FileReader();
             reader.onloadend = function () {
                 fileContent = reader.result;
-                textArea.val(fileContent);
+                certPemText.val(fileContent);
+            }
+            reader.readAsText(file);
+        }
+    });
+
+    issuerFileUploader.on('change', () => {
+        let file = issuerFileUploader.prop('files')[0];
+        if (file) {
+            let reader = new FileReader();
+            reader.onloadend = function () {
+                issuerFileContent = reader.result;
+                issuerPemText.val(issuerFileContent);
             }
             reader.readAsText(file);
         }
     });
 
     decodeBtn.click(() => {
-       let file = fileUploader.prop('files')[0];
-       let toBeSent;
-       if (fileContent) {
-           toBeSent = fileContent;
-       } else if (file) {
-           let reader = new FileReader();
-           reader.onloadend = function () {
-               toBeSent = reader.result;
-               textArea.val(toBeSent);
-           }
-           reader.readAsText(file);
-       } else if (textArea.val()) {
-           toBeSent = textArea.val();
-       }
+        let toBeSent = setToBeSent(fileUploader.prop('files')[0], certPemText, fileContent);
+
        if (toBeSent) {
            $.post({
                url: '/api/extract/mcp',
@@ -89,20 +99,8 @@ $(document).ready(function() {
     });
 
     readAttrBtn.click(() => {
-        let file = fileUploader.prop('files')[0];
-        let toBeSent;
-        if (fileContent) {
-            toBeSent = fileContent;
-        } else if (file) {
-            let reader = new FileReader();
-            reader.onloadend = function () {
-                toBeSent = reader.result;
-                textArea.val(toBeSent);
-            }
-            reader.readAsText(file);
-        } else if (textArea.val()) {
-            toBeSent = textArea.val();
-        }
+        let toBeSent = setToBeSent(fileUploader.prop('files')[0], certPemText, fileContent);
+
         if (toBeSent) {
             $.post({
                 url: '/api/extract/x509',
@@ -122,11 +120,66 @@ $(document).ready(function() {
         }
     });
 
-    clearBtn.click(() => {
+    ocspBtn.click(() => {
         resultDiv.empty();
-        textArea.val(null);
+        if (issuerFileContent === null || issuerPemText.val() === ''){
+            $("#issuerCertInput").show();
+            resultDiv.append('<p>ERROR: Please enter issuer\'s certificate in PEM format.</p>')
+            issuerPemText.focus();
+            return;
+        }
+
+        let toBeSent = setToBeSent(fileUploader.prop('files')[0], certPemText, fileContent);
+        let toBeSentIssuer = setToBeSent(issuerFileUploader.prop('files')[0], issuerPemText, issuerFileContent);
+        if (toBeSent && toBeSentIssuer) {
+            resultDiv.append('<p>OCSP request has sent! Wait for response..........</p>')
+            $.post({
+                url: '/api/extract/ocsp',
+                data: toBeSent + "===certificate separator===" + toBeSentIssuer,
+                success: data => {
+                    decoded = data;
+                    resultDiv.empty();
+                    for (const [key, value] of Object.entries(decoded)) {
+                        resultDiv.append(`<p><b>${key}</b> : ${value}</p>`);
+                    }
+                },
+                error: e => {
+                    alert(e.responseText);
+                },
+                contentType: 'application/x-pem-file'
+            });
+        }
+    });
+
+    clearBtn.click(() => {
+        clear();
+    });
+
+    function clear(){
+        resultDiv.empty();
+        certPemText.val(null);
         fileUploader.val('');
         fileContent = null;
         decoded = null;
-    });
+        issuerPemText.val(null);
+        issuerFileUploader.val('');
+        issuerFileContent = null;
+    }
+
+    function setToBeSent(file, textAreaElement, loadedContent){
+        let toBeSent;
+        if (loadedContent) {
+            toBeSent = loadedContent;
+        } else if (file) {
+            let reader = new FileReader();
+            reader.onloadend = function () {
+                toBeSent = reader.result;
+                textAreaElement.val(toBeSent);
+            }
+            reader.readAsText(file);
+        } else if (textAreaElement.val()) {
+            toBeSent = textAreaElement.val();
+        }
+        return toBeSent;
+    }
 });
