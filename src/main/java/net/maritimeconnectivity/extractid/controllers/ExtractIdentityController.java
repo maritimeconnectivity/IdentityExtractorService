@@ -17,6 +17,8 @@
 package net.maritimeconnectivity.extractid.controllers;
 
 import lombok.extern.slf4j.Slf4j;
+import net.maritimeconnectivity.extractid.model.OCSPResult;
+import net.maritimeconnectivity.extractid.model.X509CertAttribute;
 import net.maritimeconnectivity.pki.CertificateHandler;
 import net.maritimeconnectivity.pki.PKIIdentity;
 import net.maritimeconnectivity.pki.ocsp.CertStatus;
@@ -37,8 +39,6 @@ import java.io.IOException;
 import java.security.cert.CertPathValidatorException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 @RestController
 @Slf4j
@@ -96,13 +96,9 @@ public class ExtractIdentityController {
 
         X509Certificate cert = CertificateHandler.getCertFromPem(pemCert);
 
-        JSONObject obj = new JSONObject();
-        obj.put("valid from", getGracefulDate(cert.getNotBefore()));
-        obj.put("valid to", getGracefulDate(cert.getNotAfter()));
-        obj.put("subject",cert.getSubjectDN().getName());
-        obj.put("issuer",cert.getIssuerDN().getName());
+        X509CertAttribute attr = new X509CertAttribute(cert);
 
-        return new ResponseEntity<>(obj, HttpStatus.OK);
+        return new ResponseEntity<>(attr, HttpStatus.OK);
     }
 
     /**
@@ -155,16 +151,8 @@ public class ExtractIdentityController {
         } catch (OCSPValidationException e) {
             e.printStackTrace();
         }
-        JSONObject obj = new JSONObject();
-        obj.put("ocsp responder uri", OCSPClient.getOcspUrlFromCertificate(cert));
-        obj.put("cert status", status);
-        return new ResponseEntity<>(obj, HttpStatus.OK);
-    }
-
-    private String getGracefulDate(Date date){
-        String pattern = "yyyy/MM/dd HH:mm:ss Z";
-        SimpleDateFormat sdf = new SimpleDateFormat(pattern);
-        return sdf.format(date);
+        OCSPResult result = new OCSPResult(OCSPClient.getOcspUrlFromCertificate(cert), status);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
 }

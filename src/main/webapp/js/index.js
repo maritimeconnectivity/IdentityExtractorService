@@ -165,6 +165,7 @@ $(document).ready(function() {
         issuerPemText.val(null);
         issuerFileUploader.val('');
         issuerFileContent = null;
+        $("#issuerCertInput").hide();
     }
 
     function setToBeSent(file, textAreaElement, loadedContent){
