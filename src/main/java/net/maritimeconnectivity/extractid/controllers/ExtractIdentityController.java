@@ -19,6 +19,9 @@ package net.maritimeconnectivity.extractid.controllers;
 import lombok.extern.slf4j.Slf4j;
 import net.maritimeconnectivity.pki.CertificateHandler;
 import net.maritimeconnectivity.pki.PKIIdentity;
+import net.maritimeconnectivity.pki.ocsp.CertStatus;
+import net.maritimeconnectivity.pki.ocsp.OCSPClient;
+import net.maritimeconnectivity.pki.ocsp.OCSPValidationException;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.springframework.http.HttpStatus;
@@ -29,18 +32,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.json.simple.JSONObject;
-import sun.security.provider.certpath.OCSP;
-import sun.security.x509.X509CertImpl;
 
 import java.io.IOException;
-import java.net.URI;
 import java.security.cert.CertPathValidatorException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
-import static sun.security.provider.certpath.OCSP.getResponderURI;
 
 @RestController
 @Slf4j
@@ -149,21 +147,17 @@ public class ExtractIdentityController {
 
         X509Certificate cert = CertificateHandler.getCertFromPem(pemCert);
         X509Certificate issuerCert = CertificateHandler.getCertFromPem(pemCertSubCA);
-        OCSP.RevocationStatus status = null;
+
+        CertStatus status = null;
         try{
-            status = check(cert,issuerCert);
-        } catch (IOException e) {
-            return new ResponseEntity<>("Error occurred in checking revocation status: " + e.toString(), HttpStatus.BAD_REQUEST);
-        } catch (CertPathValidatorException e) {
-            return new ResponseEntity<>("Error occurred in checking revocation status: " + e.toString(), HttpStatus.BAD_REQUEST);
-        } catch (CertificateException e) {
-            return new ResponseEntity<>("Error occurred in checking revocation status: " + e.toString(), HttpStatus.BAD_REQUEST);
+            OCSPClient ocspClient = new OCSPClient(issuerCert, cert);
+            status = ocspClient.getCertificateStatus();
+        } catch (OCSPValidationException e) {
+            e.printStackTrace();
         }
         JSONObject obj = new JSONObject();
-        obj.put("ocsp responder uri", getResponderURI(X509CertImpl.toImpl(cert)));
-        obj.put("cert status", status.getCertStatus().toString());
-        if(status.getRevocationTime() != null)
-            obj.put("revoked time", getGracefulDate(status.getRevocationTime()));
+        obj.put("ocsp responder uri", OCSPClient.getOcspUrlFromCertificate(cert));
+        obj.put("cert status", status);
         return new ResponseEntity<>(obj, HttpStatus.OK);
     }
 
@@ -171,20 +165,6 @@ public class ExtractIdentityController {
         String pattern = "yyyy/MM/dd HH:mm:ss Z";
         SimpleDateFormat sdf = new SimpleDateFormat(pattern);
         return sdf.format(date);
-    }
-
-    public OCSP.RevocationStatus check(X509Certificate cert,
-                                              X509Certificate issuerCert)
-            throws IOException, CertPathValidatorException, CertificateException {
-        URI responderURI = null;
-
-        X509CertImpl certImpl = X509CertImpl.toImpl(cert);
-        responderURI = getResponderURI(certImpl);
-        if (responderURI == null) {
-            throw new CertPathValidatorException
-                    ("No OCSP Responder URI in certificate");
-        }
-        return OCSP.check(cert, issuerCert, responderURI, cert, null);
     }
 
 }
