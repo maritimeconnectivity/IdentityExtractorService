@@ -27,7 +27,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.json.simple.JSONObject;
-import sun.security.provider.certpath.CertId;
 import sun.security.provider.certpath.OCSP;
 import sun.security.x509.X509CertImpl;
 
@@ -172,7 +171,6 @@ public class ExtractIdentityController {
     public OCSP.RevocationStatus check(X509Certificate cert,
                                               X509Certificate issuerCert)
             throws IOException, CertPathValidatorException, CertificateException {
-        CertId certId = null;
         URI responderURI = null;
 
         X509CertImpl certImpl = X509CertImpl.toImpl(cert);
