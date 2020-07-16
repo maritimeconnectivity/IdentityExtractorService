@@ -133,9 +133,10 @@ $(document).ready(function() {
         let toBeSentIssuer = setToBeSent(issuerFileUploader.prop('files')[0], issuerPemText, issuerFileContent);
         if (toBeSent && toBeSentIssuer) {
             resultDiv.append('<p>OCSP request has sent! Wait for response..........</p>')
+            let jsonString = '{ "certificate": "' + toBeSent + '", "issuerCertificate": "' + toBeSentIssuer + '"}'
             $.post({
                 url: '/api/extract/ocsp',
-                data: toBeSent + "===certificate separator===" + toBeSentIssuer,
+                data: jsonString,
                 success: data => {
                     decoded = data;
                     resultDiv.empty();
@@ -146,7 +147,7 @@ $(document).ready(function() {
                 error: e => {
                     alert(e.responseText);
                 },
-                contentType: 'application/x-pem-file'
+                contentType: 'application/json'
             });
         }
     });

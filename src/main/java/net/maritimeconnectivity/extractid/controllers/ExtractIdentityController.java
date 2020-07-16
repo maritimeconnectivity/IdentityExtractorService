@@ -19,6 +19,8 @@ package net.maritimeconnectivity.extractid.controllers;
 import lombok.extern.slf4j.Slf4j;
 import net.maritimeconnectivity.pki.CertificateHandler;
 import net.maritimeconnectivity.pki.PKIIdentity;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -107,22 +109,25 @@ public class ExtractIdentityController {
 
     /**
      * Takes a PEM certificate and returns the X.509 certificate attributes
-     * @param integratedCerts the integrated string of the PEM certificate and the issuer certificate
+     * @param integratedCertsJson the integrated string of the PEM certificate and the issuer certificate
      * @return        the certificate attributes
      */
     @RequestMapping(
             value = "/api/extract/ocsp",
             method = RequestMethod.POST,
             produces = MediaType.APPLICATION_JSON_VALUE,
-            consumes = "application/x-pem-file"
+            consumes = "application/json"
     )
-    public ResponseEntity<?> checkOCSP(@RequestBody String integratedCerts) throws CertificateException, IOException, CertPathValidatorException {
-        if (!integratedCerts.contains("===certificate separator===")) {
-            return new ResponseEntity<>("Given request body does not have expected separator.", HttpStatus.BAD_REQUEST);
+    public ResponseEntity<?> checkOCSP(@RequestBody String integratedCertsJson) throws CertificateException, IOException, CertPathValidatorException, ParseException {
+        JSONParser parser = new JSONParser();
+        JSONObject jsonObject;
+        try{
+            jsonObject = (JSONObject) parser.parse(integratedCertsJson);
+        } catch (ParseException e) {
+            return new ResponseEntity<>("Given request body is not properly structured.", HttpStatus.BAD_REQUEST);
         }
-        String[] elements = integratedCerts.split("===certificate separator===");
-        String pemCert = elements[0];
-        String pemCertSubCA = elements[1];
+        String pemCert = (String) jsonObject.get("certificate");
+        String pemCertSubCA = (String) jsonObject.get("issuerCertificate");
 
         if (pemCert.endsWith("\n")) {
             pemCert = pemCert.trim();
