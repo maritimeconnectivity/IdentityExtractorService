@@ -64,11 +64,34 @@ public class ExtractIdentityControllerTest {
         String identityJson = gson.toJson(identity);
 
         try {
-            MvcResult result = mvc.perform(post("/api/extract").content(pemCert)
+            MvcResult result = mvc.perform(post("/api/extract/mcp").content(pemCert)
                     .contentType("application/x-pem-file")).andReturn();
             MockHttpServletResponse response = result.getResponse();
             assertEquals(200, response.getStatus());
             assertEquals(identityJson, response.getContentAsString());
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Test failed");
+        }
+    }
+
+    @Test
+    public void testExtractAttributesFromCert() {
+        String certPath = "src/test/resources/Certificate_My_vessel.pem";
+        String pemCert = null;
+        try {
+            pemCert = Files.lines(Paths.get(certPath)).collect(Collectors.joining("\n"));
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail("Could not load certificate from file");
+        }
+        X509Certificate cert = CertificateHandler.getCertFromPem(pemCert);
+
+        try {
+            MvcResult result = mvc.perform(post("/api/extract/x509").content(pemCert)
+                    .contentType("application/x-pem-file")).andReturn();
+            MockHttpServletResponse response = result.getResponse();
+            assertEquals(200, response.getStatus());
         } catch (Exception e) {
             e.printStackTrace();
             fail("Test failed");
