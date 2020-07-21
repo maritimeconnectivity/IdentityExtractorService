@@ -46,7 +46,7 @@ public class SwaggerConfig {
                 .title("MCP Certificate Extracting Service")
                 .description("API that can be used to extract entity information from a MCP certificate")
                 .version("1.0")
-                .contact(new Contact("Maritime Connectivity Platform", "http://maritimeconnectivity.net",
+                .contact(new Contact("Maritime Connectivity Platform", "https://maritimeconnectivity.net",
                         "info@maritimeconnectivity.net"))
                 .build();
     }

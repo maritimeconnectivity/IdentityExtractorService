@@ -132,11 +132,11 @@ $(document).ready(function() {
         let toBeSent = setToBeSent(fileUploader.prop('files')[0], certPemText, fileContent);
         let toBeSentIssuer = setToBeSent(issuerFileUploader.prop('files')[0], issuerPemText, issuerFileContent);
         if (toBeSent && toBeSentIssuer) {
-            resultDiv.append('<p>OCSP request has sent! Wait for response..........</p>')
-            let jsonString = '{ "certificate": "' + toBeSent + '", "issuerCertificate": "' + toBeSentIssuer + '"}'
+            resultDiv.append('<p>OCSP request has sent! Wait for response..........</p>');
+            let jsonString = {certificate: toBeSent, issuerCertificate: toBeSentIssuer};
             $.post({
                 url: '/api/extract/ocsp',
-                data: jsonString,
+                data: JSON.stringify(jsonString),
                 success: data => {
                     decoded = data;
                     resultDiv.empty();

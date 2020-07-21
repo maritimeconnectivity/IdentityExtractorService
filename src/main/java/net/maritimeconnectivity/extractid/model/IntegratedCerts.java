@@ -19,19 +19,12 @@ package net.maritimeconnectivity.extractid.model;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import net.maritimeconnectivity.pki.ocsp.CertStatus;
-
-import java.net.URL;
 
 @Getter
 @Setter
 @ToString
-public class OCSPResult {
-    private String ocspResponderUri;
-    private String certStatus;
+public class IntegratedCerts {
+    private String certificate;
+    private String issuerCertificate;
 
-    public OCSPResult(URL uri, CertStatus status){
-        ocspResponderUri = uri.toString();
-        certStatus = status.toString();
-    }
 }
