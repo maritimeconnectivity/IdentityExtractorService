@@ -17,6 +17,7 @@
 package net.maritimeconnectivity.extractid.controllers;
 
 import lombok.extern.slf4j.Slf4j;
+import net.maritimeconnectivity.extractid.exceptions.MCPBasicRestException;
 import net.maritimeconnectivity.extractid.model.IntegratedCerts;
 import net.maritimeconnectivity.extractid.model.OCSPResult;
 import net.maritimeconnectivity.extractid.model.X509CertAttribute;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.security.cert.X509Certificate;
 
 @RestController
@@ -57,12 +59,13 @@ public class ExtractIdentityController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = "application/x-pem-file"
     )
-    public ResponseEntity<?> extractIdentityFromCert(@RequestBody String pemCert) {
+    public ResponseEntity<PKIIdentity> extractIdentityFromCert(HttpServletRequest request, @RequestBody String pemCert)
+            throws MCPBasicRestException {
         pemCert = pemCert.trim();
         if (pemCert.startsWith(PRIVATE_KEY_HEADER)) {
-            return new ResponseEntity<>(PRIVATE_KEY_WARNING, HttpStatus.BAD_REQUEST);
+            throw new MCPBasicRestException(HttpStatus.BAD_REQUEST, PRIVATE_KEY_WARNING, request.getServletPath());
         } else if (!pemCert.startsWith(PEM_START) || !pemCert.endsWith(PEM_END)) {
-            return new ResponseEntity<>(NOT_VALID_WARNING, HttpStatus.BAD_REQUEST);
+            throw new MCPBasicRestException(HttpStatus.BAD_REQUEST, NOT_VALID_WARNING, request.getServletPath());
         }
 
         X509Certificate cert = CertificateHandler.getCertFromPem(pemCert);
@@ -81,12 +84,13 @@ public class ExtractIdentityController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = "application/x-pem-file"
     )
-    public ResponseEntity<?> extractCertAttributes(@RequestBody String pemCert) {
+    public ResponseEntity<X509CertAttribute> extractCertAttributes(HttpServletRequest request, @RequestBody String pemCert)
+            throws MCPBasicRestException {
         pemCert = pemCert.trim();
         if (pemCert.startsWith(PRIVATE_KEY_HEADER)) {
-            return new ResponseEntity<>(PRIVATE_KEY_WARNING, HttpStatus.BAD_REQUEST);
+            throw new MCPBasicRestException(HttpStatus.BAD_REQUEST, PRIVATE_KEY_WARNING, request.getServletPath());
         } else if (!pemCert.startsWith(PEM_START) || !pemCert.endsWith(PEM_END)) {
-            return new ResponseEntity<>(NOT_VALID_WARNING, HttpStatus.BAD_REQUEST);
+            throw new MCPBasicRestException(HttpStatus.BAD_REQUEST, NOT_VALID_WARNING, request.getServletPath());
         }
 
         X509Certificate cert = CertificateHandler.getCertFromPem(pemCert);
@@ -107,22 +111,24 @@ public class ExtractIdentityController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<?> checkOCSP(@RequestBody IntegratedCerts integratedCerts) {
+    public ResponseEntity<OCSPResult> checkOCSP(HttpServletRequest request, @RequestBody IntegratedCerts integratedCerts)
+            throws MCPBasicRestException {
         String pemCert = integratedCerts.getCertificate();
         String pemCertSubCA = integratedCerts.getIssuerCertificate();
 
         pemCert = pemCert.trim();
         if (pemCert.startsWith(PRIVATE_KEY_HEADER)) {
-            return new ResponseEntity<>(PRIVATE_KEY_WARNING, HttpStatus.BAD_REQUEST);
+            throw new MCPBasicRestException(HttpStatus.BAD_REQUEST, PRIVATE_KEY_WARNING, request.getServletPath());
         } else if (!pemCert.startsWith(PEM_START) || !pemCert.endsWith(PEM_END)) {
-            return new ResponseEntity<>(NOT_VALID_WARNING, HttpStatus.BAD_REQUEST);
+            throw new MCPBasicRestException(HttpStatus.BAD_REQUEST, NOT_VALID_WARNING, request.getServletPath());
         }
 
         pemCertSubCA = pemCertSubCA.trim();
         if (pemCertSubCA.startsWith(PRIVATE_KEY_HEADER)) {
-            return new ResponseEntity<>(PRIVATE_KEY_WARNING, HttpStatus.BAD_REQUEST);
+            throw new MCPBasicRestException(HttpStatus.BAD_REQUEST, PRIVATE_KEY_WARNING, request.getServletPath());
         } else if (!pemCertSubCA.startsWith(PEM_START) || !pemCertSubCA.endsWith(PEM_END)) {
-            return new ResponseEntity<>("Request does not contain a valid PEM encoded issuer certificate", HttpStatus.BAD_REQUEST);
+            throw new MCPBasicRestException(HttpStatus.BAD_REQUEST,
+                    "Request does not contain a valid PEM encoded issuer certificate", request.getServletPath());
         }
 
         X509Certificate cert = CertificateHandler.getCertFromPem(pemCert);

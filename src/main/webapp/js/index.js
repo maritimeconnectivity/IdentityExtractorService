@@ -91,7 +91,8 @@ $(document).ready(function() {
                    }
                },
                error: e => {
-                   alert(e.responseText);
+                   e = JSON.parse(e.responseText)
+                   alert(e.message);
                },
                contentType: 'application/x-pem-file'
            });
@@ -113,7 +114,8 @@ $(document).ready(function() {
                     }
                 },
                 error: e => {
-                    alert(e.responseText);
+                    e = JSON.parse(e.responseText)
+                    alert(e.message);
                 },
                 contentType: 'application/x-pem-file'
             });
@@ -145,7 +147,8 @@ $(document).ready(function() {
                     }
                 },
                 error: e => {
-                    alert(e.responseText);
+                    e = JSON.parse(e.responseText)
+                    alert(e.message);
                 },
                 contentType: 'application/json'
             });
